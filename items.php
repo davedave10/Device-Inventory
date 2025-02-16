@@ -7,12 +7,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="https://cdn.datatables.net/2.2.1/css/dataTables.dataTables.min.css" rel="stylesheet">
-
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.2.1/js/dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     
-    <title>Dashboard</title>
+    <title>Item</title>
 </head>
 
 <body>
@@ -54,6 +55,7 @@
                                 <th>Brand</th>
                             </tr>
                         </thead>
+
                         <tbody id="compute_table">
                         </tbody>
                     </table>
@@ -126,7 +128,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-danger">Delete</button>
+                        <button type="button" class="btn btn-danger" id="delete_item" name="delete_item" >Delete</button>
                         <button type="button" class="btn btn-primary" id="update_item" name="update_item">Edit</button>
                     </div>
                 </form>
@@ -138,41 +140,52 @@
     <script>
        $(document).ready(function() {
             // Initialize the DataTable
-            var table = $('#item-table').DataTable({
-                searching: true,
-                responsive: true,
-                autoWidth: false,
-                lengthChange: false,
-                paging: true,
-                info: true,
-                order: [[0, 'asc']],
-                lengthMenu: [20, 50, 100, 200],
-                pageLength: 20
-            });
-            let tableBody = $('#compute_table');
-            tableBody.empty();
-            $.ajax({
-                url: "fetch_table.php",  // URL to fetch data via JSON
-                method: "GET",
-                dataType: "json",  // Ensure the response is parsed as JSON
-                success: function(response) {
-                 
-                    response.forEach(function(item) {
-                        // Add each row to the table
-                            let row = "<tr data-bs-toggle='modal' data-bs-target='#Fetchmodal' data-id='" + item.item_id +"'>" +
-                                "<td>" + item.item_id + "</td>" +
-                                "<td>" + item.item_name + "</td>" +
-                                "<td>" + item.item_mac + "</td>" +
-                                "<td>" + item.item_sn + "</td>" +
-                                "<td>" + item.item_brand + "</td>" +
-                                "</tr>";
-                           tableBody.append(row);     
-                    });
-                },
-                error: function(xhr, status, error) {
-                    alert("An error occurred while fetching the data: " + xhr.responseText);
-                }
-            });
+            let fetchId = "";
+
+            function LoadTable(){
+                $.ajax({
+                    url: "fetch_table.php",  // URL to fetch data via JSON
+                    method: "GET",
+                    dataType: "json",  // Ensure the response is parsed as JSON
+                    success: function(response) {
+                        let tableBody = $('#compute_table');
+                        tableBody.empty();
+                        response.forEach(function(item) {
+                            // Add each row to the table
+                                let row = "<tr data-bs-toggle='modal' data-bs-target='#Fetchmodal' data-id='" + item.item_id +"'>" +
+                                    "<td>" + item.item_id + "</td>" +
+                                    "<td>" + item.item_name + "</td>" +
+                                    "<td>" + item.item_mac + "</td>" +
+                                    "<td>" + item.item_sn + "</td>" +
+                                    "<td>" + item.item_brand + "</td>" +
+                                    "</tr>";
+                            tableBody.append(row);     
+                        });
+                        
+                        $('#item-table').show();
+                        // Clear The config
+                        if ($.fn.DataTable.isDataTable('#item-table')) {
+                            $('#item-table').DataTable().destroy();
+                        }
+
+                        var table = $('#item-table').DataTable({
+                            searching: true,
+                            responsive: true,
+                            autoWidth: false,
+                            lengthChange: false,
+                            paging: true,
+                            info: true,
+                            order: [[0, 'asc']],
+                            lengthMenu: [20, 50, 100, 200],
+                            pageLength: 20
+                            });
+                    },
+                    error: function(xhr, status, error) {
+                        alert("An error occurred while fetching the data: " + xhr.responseText);
+                    }
+                });
+            }
+            LoadTable();
             $('#submit_item').click(function() {
                 let item_name = $('#item_name').val();
                 let item_mac = $('#item_mac').val();
@@ -191,12 +204,73 @@
                     success: function(response) {
                         alert(response);
                         $('#AddModal').modal('hide'); //hide the modal after submission
+                        setTimeout(() => { 
+                            LoadTable();
+                        }, 2000);
                     },
                     error: function(xhr, status, error) {
                         alert("An error occurred while fetching the data: " + xhr.responseText);
                      }
                     });
             });
+
+            $('#delete_item').click(function (){
+                const swalWithBootstrapButtons = Swal.mixin({
+                customClass: {
+                    confirmButton: "btn btn-success",
+                    cancelButton: "btn btn-danger"
+                },
+                buttonsStyling: false
+                });
+                swalWithBootstrapButtons.fire({
+                title: "Are you sure?",
+                text: "You won't be able to revert this!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, delete it!",
+                cancelButtonText: "No, cancel!",
+                reverseButtons: true
+                }).then((result) => {
+                // If they press yes, delete it 
+                if (result.isConfirmed) {
+                    $.ajax({
+                        
+                        url: "delete_item.php",
+                        method: "POST",
+                        data: {id: fetchId},
+                        success: function(response){
+                            swalWithBootstrapButtons.fire({
+                            title: "Deleted!",
+                            text: "Your data has been deleted.",
+                            icon: "success"
+                            });
+                            $('#Fetchmodal').modal('hide');
+                            setTimeout(() => { 
+                                    LoadTable();
+                                }, 2000);
+                        },
+                        error: function(xhr, status, error) {
+                            swalWithBootstrapButtons.fire({
+                            title: "Deleted!",
+                            text: "Your data has been deleted.",
+                            icon: "success"
+                            });
+                        }
+                    })
+                   
+                } else if (
+                    /* Read more about handling dismissals below */
+                    result.dismiss === Swal.DismissReason.cancel
+                ) {
+                    swalWithBootstrapButtons.fire({
+                    title: "Cancelled",
+                    text: "An error occurred while fetching the data: " + xhr.responseText,
+                    icon: "error"
+                    });
+                }
+                });
+                
+            })
             $('#item-table tbody').on('click', 'tr', function(){
                 fetchId = $(this).data('id');
                 $.ajax({
