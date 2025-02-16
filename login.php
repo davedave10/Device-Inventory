@@ -1,33 +1,39 @@
+
 <?php
-$hostname = "localhost";
-$username = "root";
-$password = "";
-$dbname = "inventory";
+require_once('config.php');
+session_start();
 
-$conn = new mysqli($hostname, $username, $password, $dbname);
-
-if($conn->connect_error){
-    die("Connection Failed;" . $conn->connect_error);
-}
-if ($_SERVER["REQUEST_METHOD"] == "POST"){
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST["email"];
-    $password = $_POST["password"];
+    $unencrypted_password = $_POST["password"];
     
-    $sql = "SELECT * FROM users WHERE user_email = '$email'";
+    
+    $sql = "SELECT * FROM users WHERE user_email='$email'";
+
     $result = $conn->query($sql);
-    if($result->num_rows > 0){
+    // if email have the same value of the user_email 
+    if ($result->num_rows > 0) {
         while($row = $result->fetch_assoc()){
-            if ($row['user_password'] == $password){
-                header("Location: dashboard.php");
-                echo "Your are login";
+            $hash = $row['user_password'];
+            // Verify the hash code against the unencrypted password entered 
+            $verify = password_verify($unencrypted_password, $hash); 
+            if ($verify) {
+                $_SESSION['user_logged_in'] = true;
+                $_SESSION['user_email'] = $email;
+                header(header: "Location: dashboard.php");
+                exit();
             } else {
-                echo "Please check your email or password";
+                echo "Please check you email or password";
             }
-        } 
-    
-    }else{
-        echo"Please check your email or password";
+        }
+    }else {
+        echo "Please check you email or password";
     }
-    } 
+    
+
+    
+}else {
+    echo "ERROR";
+}
 
 ?>

@@ -1,3 +1,15 @@
+
+<?php 
+session_start();
+if (!isset($_SESSION['user_logged_in']) || $_SESSION['user_logged_in'] !== true) {
+  header("Location: index.php");
+  exit();
+}
+
+
+?>
+
+
 <html lang="en">
 <head>
     <title>Testing</title>
@@ -26,7 +38,17 @@
         <li class="nav-item">
           <a class="nav-link" aria-current="page" href="items.php">Items</a>
         </li>
-        
+        <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <?php echo $_SESSION['user_email']?>
+        </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarUser">
+                <li><a class="dropdown-item" href="">Account</a></li>
+                <li><a class="dropdown-item" href="">Settings</a></li>
+                <li><a class="dropdown-item" href="logout.php">Logout</a></li>
+
+            </ul>
+        </li>
       </ul>
     </div>
   </div>
@@ -45,7 +67,7 @@
                         $result = $conn->query($sql);
                         $totalItems = $result->num_rows
                         ?>
-                        <h3 class="fs-2"><?= $totalItems ?></h3>
+                        <h3 class="fs-2"><?php echo $totalItems ?></h3>
                         <p class="fs-5 mb-0">Total Items</p>
                     </div>
                     <div class="icon-circle bg-light text-primary">
@@ -65,7 +87,7 @@
                         $result_users = $conn->query($sql);
                         $totalUsers = $result_users->num_rows
                         ?>
-                        <h3 class="fs-2"><?= $totalUsers ?></h3>
+                        <h3 class="fs-2"><?php echo $totalUsers ?></h3>
                         <p class="fs-5 mb-0">Total Users</p>
                     </div>
                     <div class="icon-circle bg-light text-info">
